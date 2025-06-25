@@ -17,8 +17,6 @@ class GASSHOOTER_API AGSPickup : public AActor
 public:	
 	AGSPickup();
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 	// Pickup on touch
 	virtual void NotifyActorBeginOverlap(class AActor* Other) override;
 
@@ -33,7 +31,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "GSPickup")
 	class UCapsuleComponent* CollisionComp;
 
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_IsActive, Category = "GSPickup")
+	UPROPERTY(BlueprintReadOnly, Category = "GSPickup")
 	bool bIsActive;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GSPickup")
@@ -56,7 +54,7 @@ protected:
 	TArray<TSubclassOf<class UGameplayEffect>> EffectClasses;
 
 	// The character who has picked up this pickup
-	UPROPERTY(BlueprintReadOnly, Replicated)
+	UPROPERTY(BlueprintReadOnly)
 	AGSCharacterBase* PickedUpBy;
 
 	FTimerHandle TimerHandle_RespawnPickup;
@@ -80,7 +78,4 @@ protected:
 	// Blueprint implementable effects
 	UFUNCTION(BlueprintImplementableEvent, Meta = (DisplayName = "OnRespawned"))
 	void K2_OnRespawned();
-
-	UFUNCTION()
-	virtual void OnRep_IsActive();
 };

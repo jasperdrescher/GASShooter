@@ -8,7 +8,6 @@
 #include "Components/CapsuleComponent.h"
 #include "GASShooter/GASShooter.h"
 #include "Kismet/GameplayStatics.h"
-#include "Net/UnrealNetwork.h"
 #include "Sound/SoundCue.h"
 #include "TimerManager.h"
 
@@ -16,7 +15,6 @@
 AGSPickup::AGSPickup()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	bReplicates = true;
 	bIsActive = true;
 	bCanRespawn = true;
 	RespawnTime = 5.0f;
@@ -31,14 +29,6 @@ AGSPickup::AGSPickup()
 
 	RestrictedPickupTags.AddTag(FGameplayTag::RequestGameplayTag("State.Dead"));
 	RestrictedPickupTags.AddTag(FGameplayTag::RequestGameplayTag("State.KnockedDown"));
-}
-
-void AGSPickup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(AGSPickup, bIsActive);
-	DOREPLIFETIME(AGSPickup, PickedUpBy);
 }
 
 void AGSPickup::NotifyActorBeginOverlap(AActor* Other)
@@ -149,14 +139,3 @@ void AGSPickup::OnRespawned()
 	K2_OnRespawned();
 }
 
-void AGSPickup::OnRep_IsActive()
-{
-	if (bIsActive)
-	{
-		OnRespawned();
-	}
-	else
-	{
-		OnPickedUp();
-	}
-}
