@@ -56,34 +56,6 @@ float UGSCharacterMovementComponent::GetMaxSpeed() const
 	return Owner->GetMoveSpeed();
 }
 
-void UGSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
-{
-	Super::UpdateFromCompressedFlags(Flags);
-
-	//The Flags parameter contains the compressed input flags that are stored in the saved move.
-	//UpdateFromCompressed flags simply copies the flags from the saved move into the movement component.
-	//It basically just resets the movement component to the state when the move was made so it can simulate from there.
-	RequestToStartSprinting = (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;
-
-	RequestToStartADS = (Flags & FSavedMove_Character::FLAG_Custom_1) != 0;
-}
-
-FNetworkPredictionData_Client* UGSCharacterMovementComponent::GetPredictionData_Client() const
-{
-	check(PawnOwner != NULL);
-
-	if (!ClientPredictionData)
-	{
-		UGSCharacterMovementComponent* MutableThis = const_cast<UGSCharacterMovementComponent*>(this);
-
-		MutableThis->ClientPredictionData = new FGSNetworkPredictionData_Client(*this);
-		MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
-		MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f;
-	}
-
-	return ClientPredictionData;
-}
-
 void UGSCharacterMovementComponent::StartSprinting()
 {
 	RequestToStartSprinting = true;
