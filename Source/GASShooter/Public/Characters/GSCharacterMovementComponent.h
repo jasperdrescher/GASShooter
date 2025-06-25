@@ -74,8 +74,6 @@ public:
 	FGameplayTag InteractingRemovalTag;
 
 	virtual float GetMaxSpeed() const override;
-	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
-	virtual class FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 
 	// Sprint
 	UFUNCTION(BlueprintCallable, Category = "Sprint")
