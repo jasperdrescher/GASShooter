@@ -13,9 +13,4 @@ AGSProjectile::AGSProjectile()
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(FName("ProjectileMovement"));
 	ProjectileMovement->ProjectileGravityScale = 0;
 	ProjectileMovement->InitialSpeed = 7000.0f;
-
-	bReplicates = true;
-
-	//TODO change this to a better value
-	SetNetUpdateFrequency(100.0f);
 }

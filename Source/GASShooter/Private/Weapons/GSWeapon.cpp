@@ -9,7 +9,6 @@
 #include "Characters/Heroes/GSHeroCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Net/UnrealNetwork.h"
 #include "Player/GSPlayerController.h"
 
 // Sets default values
@@ -18,9 +17,6 @@ AGSWeapon::AGSWeapon()
  	// Set this actor to never tick
 	PrimaryActorTick.bCanEverTick = false;
 
-	bReplicates = true;
-	bNetUseOwnerRelevancy = true;
-	SetNetUpdateFrequency(100.0f); // Set this to a value that's appropriate for your game
 	bSpawnWithCollision = true;
 	PrimaryClipAmmo = 0;
 	MaxPrimaryClipAmmo = 0;
@@ -80,25 +76,6 @@ USkeletalMeshComponent* AGSWeapon::GetWeaponMesh1P() const
 USkeletalMeshComponent* AGSWeapon::GetWeaponMesh3P() const
 {
 	return WeaponMesh3P;
-}
-
-void AGSWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME_CONDITION(AGSWeapon, OwningCharacter, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(AGSWeapon, PrimaryClipAmmo, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(AGSWeapon, MaxPrimaryClipAmmo, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(AGSWeapon, SecondaryClipAmmo, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(AGSWeapon, MaxSecondaryClipAmmo, COND_OwnerOnly);
-}
-
-void AGSWeapon::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
-{
-	Super::PreReplication(ChangedPropertyTracker);
-
-	DOREPLIFETIME_ACTIVE_OVERRIDE(AGSWeapon, PrimaryClipAmmo, (IsValid(AbilitySystemComponent) && !AbilitySystemComponent->HasMatchingGameplayTag(WeaponIsFiringTag)));
-	DOREPLIFETIME_ACTIVE_OVERRIDE(AGSWeapon, SecondaryClipAmmo, (IsValid(AbilitySystemComponent) && !AbilitySystemComponent->HasMatchingGameplayTag(WeaponIsFiringTag)));
 }
 
 void AGSWeapon::SetOwningCharacter(AGSHeroCharacter* InOwningCharacter)
@@ -439,24 +416,4 @@ void AGSWeapon::PickUpOnTouch(AGSHeroCharacter* InCharacter)
 		WeaponMesh3P->SetVisibility(true, true);
 		WeaponMesh3P->SetVisibility(false, true);
 	}
-}
-
-void AGSWeapon::OnRep_PrimaryClipAmmo(int32 OldPrimaryClipAmmo)
-{
-	OnPrimaryClipAmmoChanged.Broadcast(OldPrimaryClipAmmo, PrimaryClipAmmo);
-}
-
-void AGSWeapon::OnRep_MaxPrimaryClipAmmo(int32 OldMaxPrimaryClipAmmo)
-{
-	OnMaxPrimaryClipAmmoChanged.Broadcast(OldMaxPrimaryClipAmmo, MaxPrimaryClipAmmo);
-}
-
-void AGSWeapon::OnRep_SecondaryClipAmmo(int32 OldSecondaryClipAmmo)
-{
-	OnSecondaryClipAmmoChanged.Broadcast(OldSecondaryClipAmmo, SecondaryClipAmmo);
-}
-
-void AGSWeapon::OnRep_MaxSecondaryClipAmmo(int32 OldMaxSecondaryClipAmmo)
-{
-	OnMaxSecondaryClipAmmoChanged.Broadcast(OldMaxSecondaryClipAmmo, MaxSecondaryClipAmmo);
 }

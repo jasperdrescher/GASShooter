@@ -91,10 +91,6 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "GASShooter|GSWeapon")
 	virtual USkeletalMeshComponent* GetWeaponMesh3P() const;
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker) override;
-
 	void SetOwningCharacter(AGSHeroCharacter* InOwningCharacter);
 
 	// Pickup on touch
@@ -176,17 +172,17 @@ protected:
 	UGSAbilitySystemComponent* AbilitySystemComponent;
 
 	// How much ammo in the clip the gun starts with
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, ReplicatedUsing = OnRep_PrimaryClipAmmo, Category = "GASShooter|GSWeapon|Ammo")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASShooter|GSWeapon|Ammo")
 	int32 PrimaryClipAmmo;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, ReplicatedUsing = OnRep_MaxPrimaryClipAmmo, Category = "GASShooter|GSWeapon|Ammo")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASShooter|GSWeapon|Ammo")
 	int32 MaxPrimaryClipAmmo;
 
 	// How much ammo in the clip the gun starts with. Used for things like rifle grenades.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, ReplicatedUsing = OnRep_SecondaryClipAmmo, Category = "GASShooter|GSWeapon|Ammo")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASShooter|GSWeapon|Ammo")
 	int32 SecondaryClipAmmo;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, ReplicatedUsing = OnRep_MaxSecondaryClipAmmo, Category = "GASShooter|GSWeapon|Ammo")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASShooter|GSWeapon|Ammo")
 	int32 MaxSecondaryClipAmmo;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASShooter|GSWeapon|Ammo")
@@ -261,16 +257,4 @@ protected:
 
 	// Called when the player picks up this weapon
 	virtual void PickUpOnTouch(AGSHeroCharacter* InCharacter);
-
-	UFUNCTION()
-	virtual void OnRep_PrimaryClipAmmo(int32 OldPrimaryClipAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_MaxPrimaryClipAmmo(int32 OldMaxPrimaryClipAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_SecondaryClipAmmo(int32 OldSecondaryClipAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_MaxSecondaryClipAmmo(int32 OldMaxSecondaryClipAmmo);
 };
