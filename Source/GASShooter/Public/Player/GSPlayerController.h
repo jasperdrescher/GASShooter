@@ -79,9 +79,4 @@ protected:
 
 	UFUNCTION(Exec)
 	void Kill();
-
-	UFUNCTION(Server, Reliable)
-	void ServerKill();
-	void ServerKill_Implementation();
-	bool ServerKill_Validate();
 };

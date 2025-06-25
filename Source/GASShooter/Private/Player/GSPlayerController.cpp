@@ -204,19 +204,9 @@ void AGSPlayerController::OnRep_PlayerState()
 
 void AGSPlayerController::Kill()
 {
-	ServerKill();
-}
-
-void AGSPlayerController::ServerKill_Implementation()
-{
 	AGSPlayerState* PS = GetPlayerState<AGSPlayerState>();
 	if (PS)
 	{
 		PS->GetAttributeSetBase()->SetHealth(0.0f);
 	}
-}
-
-bool AGSPlayerController::ServerKill_Validate()
-{
-	return true;
 }
