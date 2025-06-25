@@ -41,7 +41,7 @@ Secondary ammo is not used. It would be used for things like rifle grenades.
 * Headshot bonus damage
 * [Reusable, custom TargetActors](https://github.com/tranek/GASDocumentation#concepts-targeting-actors)
 * [GameplayAbilityWorldReticles](https://github.com/tranek/GASDocumentation#concepts-targeting-reticles)
-* Play replicated montages on multiple Skeletal Mesh Components **belonging to the AvatarActor** in an ability
+* Play anim montages on multiple Skeletal Mesh Components **belonging to the AvatarActor** in an ability
 * [Subclassing `FGameplayEffectContext`](https://github.com/tranek/GASDocumentation#concepts-ge-context) to send additional information to GameplayCues
 * Character shield that drains before health is removed by damage
 * Item pickups
