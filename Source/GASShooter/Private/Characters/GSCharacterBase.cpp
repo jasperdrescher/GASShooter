@@ -53,7 +53,7 @@ int32 AGSCharacterBase::GetAbilityLevel(EGSAbilityInputID AbilityID) const
 
 void AGSCharacterBase::RemoveCharacterAbilities()
 {
-	if (GetLocalRole() != ROLE_Authority || !IsValid(AbilitySystemComponent) || !AbilitySystemComponent->bCharacterAbilitiesGiven)
+	if (!IsValid(AbilitySystemComponent) || !AbilitySystemComponent->bCharacterAbilitiesGiven)
 	{
 		return;
 	}
@@ -79,7 +79,6 @@ void AGSCharacterBase::RemoveCharacterAbilities()
 
 void AGSCharacterBase::Die()
 {
-	// Only runs on Server
 	RemoveCharacterAbilities();
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -99,7 +98,6 @@ void AGSCharacterBase::Die()
 		AbilitySystemComponent->AddLooseGameplayTag(DeadTag);
 	}
 
-	//TODO replace with a locally executed GameplayCue
 	if (DeathSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
@@ -244,8 +242,8 @@ void AGSCharacterBase::BeginPlay()
 
 void AGSCharacterBase::AddCharacterAbilities()
 {
-	// Grant abilities, but only on the server	
-	if (GetLocalRole() != ROLE_Authority || !IsValid(AbilitySystemComponent) || AbilitySystemComponent->bCharacterAbilitiesGiven)
+	// Grant abilities
+	if (!IsValid(AbilitySystemComponent) || AbilitySystemComponent->bCharacterAbilitiesGiven)
 	{
 		return;
 	}
@@ -272,7 +270,6 @@ void AGSCharacterBase::InitializeAttributes()
 		return;
 	}
 
-	// Can run on Server and Client
 	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
 	EffectContext.AddSourceObject(this);
 
@@ -285,7 +282,7 @@ void AGSCharacterBase::InitializeAttributes()
 
 void AGSCharacterBase::AddStartupEffects()
 {
-	if (GetLocalRole() != ROLE_Authority || !IsValid(AbilitySystemComponent) || AbilitySystemComponent->bStartupEffectsApplied)
+	if (!IsValid(AbilitySystemComponent) || AbilitySystemComponent->bStartupEffectsApplied)
 	{
 		return;
 	}

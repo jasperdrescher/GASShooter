@@ -149,12 +149,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	// Grant abilities on the Server. The Ability Specs will be replicated to the owning client.
 	virtual void AddCharacterAbilities();
 
-	// Initialize the Character's attributes. Must run on Server but we run it on Client too
-	// so that we don't have to wait. The Server's replication to the Client won't matter since
-	// the values should be the same.
+	// Initialize the Character's attributes.
 	virtual void InitializeAttributes();
 
 	virtual void AddStartupEffects();
