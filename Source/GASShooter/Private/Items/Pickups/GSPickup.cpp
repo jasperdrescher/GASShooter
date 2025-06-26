@@ -33,7 +33,7 @@ AGSPickup::AGSPickup()
 
 void AGSPickup::NotifyActorBeginOverlap(AActor* Other)
 {
-	if (GetLocalRole() == ROLE_Authority && Other && Other != this)
+	if (Other && Other != this)
 	{
 		PickupOnTouch(Cast<AGSCharacterBase>(Other));
 	}
