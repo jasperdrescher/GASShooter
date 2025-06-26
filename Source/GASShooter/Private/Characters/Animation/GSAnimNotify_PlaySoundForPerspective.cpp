@@ -45,18 +45,10 @@ void UGSAnimNotify_PlaySoundForPerspective::Notify(USkeletalMeshComponent* MeshC
 			return;
 		}
 
-		// We won't replicate first person animations, but Server (Host as listen server) will still play them.
-		// Avoid playing first person sounds for listen server.
-		if (bPlayForFirstPersonPerspective && !OwningHero->IsLocallyControlled() && !OwningHero->IsPlayerControlled())
-		{
-			return;
-		}
-
 		// Always play third person sounds unless autonomous client is in first person. Play first person sounds if the OwningHero is in first person.
 		// Simulated clients won't play first person animations so they will never play first person sounds.
 		// Listen server won't play simulated first person sounds because of the check above.
-		if ((!bPlayForFirstPersonPerspective && !OwningHero->IsLocallyControlled() && !OwningHero->IsPlayerControlled())
-			|| bPlayForFirstPersonPerspective == OwningHero->IsInFirstPersonPerspective())
+		if (bPlayForFirstPersonPerspective == OwningHero->IsInFirstPersonPerspective())
 		{
 			if (bFollow)
 			{
