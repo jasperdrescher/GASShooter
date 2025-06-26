@@ -15,7 +15,6 @@
 #include "GSBlueprintFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Net/UnrealNetwork.h"
 #include "Player/GSPlayerController.h"
 #include "Player/GSPlayerState.h"
 #include "Sound/SoundCue.h"
@@ -32,11 +31,9 @@ AGSHeroCharacter::AGSHeroCharacter(const class FObjectInitializer& ObjectInitial
 	bIsFirstPersonPerspective = false;
 	bWasInFirstPersonPerspectiveWhenKnockedDown = false;
 	bASCInputBound = false;
-	bChangedWeaponLocally = false;
 	Default1PFOV = 90.0f;
 	Default3PFOV = 80.0f;
 	NoWeaponTag = FGameplayTag::RequestGameplayTag(FName("Weapon.Equipped.None"));
-	WeaponChangingDelayReplicationTag = FGameplayTag::RequestGameplayTag(FName("Ability.Weapon.IsChangingDelayReplication"));
 	WeaponAmmoTypeNoneTag = FGameplayTag::RequestGameplayTag(FName("Weapon.Ammo.None"));
 	WeaponAbilityTag = FGameplayTag::RequestGameplayTag(FName("Ability.Weapon"));
 	CurrentWeaponTag = NoWeaponTag;
@@ -92,16 +89,6 @@ AGSHeroCharacter::AGSHeroCharacter(const class FObjectInitializer& ObjectInitial
 	InteractingTag = FGameplayTag::RequestGameplayTag("State.Interacting");
 }
 
-void AGSHeroCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(AGSHeroCharacter, Inventory);
-	// Only replicate CurrentWeapon to simulated clients and manually sync CurrentWeeapon with Owner when we're ready.
-	// This allows us to predict weapon changing.
-	DOREPLIFETIME_CONDITION(AGSHeroCharacter, CurrentWeapon, COND_SimulatedOnly);
-}
-
 // Called to bind functionality to input
 void AGSHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -117,7 +104,7 @@ void AGSHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 	PlayerInputComponent->BindAction("TogglePerspective", IE_Pressed, this, &AGSHeroCharacter::TogglePerspective);
 
-	// Bind player input to the AbilitySystemComponent. Also called in OnRep_PlayerState because of a potential race condition.
+	// Bind player input to the AbilitySystemComponent.
 	BindASCInput();
 }
 
@@ -134,9 +121,6 @@ void AGSHeroCharacter::PossessedBy(AController* NewController)
 
 		// AI won't have PlayerControllers so we can init again here just to be sure. No harm in initing twice for heroes that have PlayerControllers.
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
-
-		WeaponChangingDelayReplicationTagChangedDelegateHandle = AbilitySystemComponent->RegisterGameplayTagEvent(WeaponChangingDelayReplicationTag)
-			.AddUObject(this, &AGSHeroCharacter::WeaponChangingDelayReplicationTagChanged);
 
 		// Set the AttributeSetBase for convenience attribute functions
 		AttributeSetBase = PS->GetAttributeSetBase();
@@ -188,11 +172,6 @@ UGSFloatingStatusBarWidget* AGSHeroCharacter::GetFloatingStatusBar()
 
 void AGSHeroCharacter::KnockDown()
 {
-	if (!HasAuthority())
-	{
-		return;
-	}
-
 	if (IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->CancelAllAbilities();
@@ -248,17 +227,9 @@ void AGSHeroCharacter::FinishDying()
 	// AGSHeroCharacter doesn't follow AGSCharacterBase's pattern of Die->Anim->FinishDying because AGSHeroCharacter can be knocked down
 	// to either be revived, bleed out, or finished off by an enemy.
 
-	if (!HasAuthority())
-	{
-		return;
-	}
-
 	RemoveAllWeaponsFromInventory();
 
-	AbilitySystemComponent->RegisterGameplayTagEvent(WeaponChangingDelayReplicationTag).Remove(WeaponChangingDelayReplicationTagChangedDelegateHandle);
-
-	AGASShooterGameModeBase* GM = Cast<AGASShooterGameModeBase>(GetWorld()->GetAuthGameMode());
-
+	AGASShooterGameModeBase* GM = Cast<AGASShooterGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 	if (GM)
 	{
 		GM->HeroDied(GetController());
@@ -313,11 +284,6 @@ bool AGSHeroCharacter::AddWeaponToInventory(AGSWeapon* NewWeapon, bool bEquipWea
 			UGameplayStatics::SpawnSoundAttached(PickupSound, GetRootComponent());
 		}
 
-		if (GetLocalRole() < ROLE_Authority)
-		{
-			return false;
-		}
-
 		// Create a dynamic instant Gameplay Effect to give the primary and secondary ammo
 		UGameplayEffect* GEAmmo = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("Ammo")));
 		GEAmmo->DurationPolicy = EGameplayEffectDurationType::Instant;
@@ -354,11 +320,6 @@ bool AGSHeroCharacter::AddWeaponToInventory(AGSWeapon* NewWeapon, bool bEquipWea
 		return false;
 	}
 
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		return false;
-	}
-
 	Inventory.Weapons.Add(NewWeapon);
 	NewWeapon->SetOwningCharacter(this);
 	NewWeapon->AddAbilities();
@@ -366,7 +327,6 @@ bool AGSHeroCharacter::AddWeaponToInventory(AGSWeapon* NewWeapon, bool bEquipWea
 	if (bEquipWeapon)
 	{
 		EquipWeapon(NewWeapon);
-		ClientSyncCurrentWeapon(CurrentWeapon);
 	}
 
 	return true;
@@ -396,11 +356,6 @@ bool AGSHeroCharacter::RemoveWeaponFromInventory(AGSWeapon* WeaponToRemove)
 
 void AGSHeroCharacter::RemoveAllWeaponsFromInventory()
 {
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		return;
-	}
-
 	UnEquipCurrentWeapon();
 
 	float radius = 50.0f;
@@ -421,16 +376,7 @@ void AGSHeroCharacter::RemoveAllWeaponsFromInventory()
 
 void AGSHeroCharacter::EquipWeapon(AGSWeapon* NewWeapon)
 {
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		ServerEquipWeapon(NewWeapon);
-		SetCurrentWeapon(NewWeapon, CurrentWeapon);
-		bChangedWeaponLocally = true;
-	}
-	else
-	{
-		SetCurrentWeapon(NewWeapon, CurrentWeapon);
-	}
+	SetCurrentWeapon(NewWeapon, CurrentWeapon);
 }
 
 void AGSHeroCharacter::ServerEquipWeapon_Implementation(AGSWeapon* NewWeapon)
@@ -589,7 +535,7 @@ float AGSHeroCharacter::GetInteractionDuration_Implementation(UPrimitiveComponen
 
 void AGSHeroCharacter::PreInteract_Implementation(AActor* InteractingActor, UPrimitiveComponent* InteractionComponent)
 {
-	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag) && HasAuthority())
+	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag))
 	{
 		AbilitySystemComponent->TryActivateAbilitiesByTag(FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Ability.Revive")));
 	}
@@ -597,7 +543,7 @@ void AGSHeroCharacter::PreInteract_Implementation(AActor* InteractingActor, UPri
 
 void AGSHeroCharacter::PostInteract_Implementation(AActor* InteractingActor, UPrimitiveComponent* InteractionComponent)
 {
-	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag) && HasAuthority())
+	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag))
 	{
 		AbilitySystemComponent->ApplyGameplayEffectToSelf(Cast<UGameplayEffect>(ReviveEffect->GetDefaultObject()), 1.0f, AbilitySystemComponent->MakeEffectContext());
 	}
@@ -617,7 +563,7 @@ void AGSHeroCharacter::GetPreInteractSyncType_Implementation(bool& bShouldSync, 
 
 void AGSHeroCharacter::CancelInteraction_Implementation(UPrimitiveComponent* InteractionComponent)
 {
-	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag) && HasAuthority())
+	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag))
 	{
 		FGameplayTagContainer CancelTags(FGameplayTag::RequestGameplayTag("Ability.Revive"));
 		AbilitySystemComponent->CancelAbilities(&CancelTags);
@@ -644,12 +590,6 @@ void AGSHeroCharacter::BeginPlay()
 	// On respawn, they are set up in PossessedBy.
 	// When the player a client, the floating status bars are all set up in OnRep_PlayerState.
 	InitializeFloatingStatusBar();
-
-	// CurrentWeapon is replicated only to Simulated clients so sync the current weapon manually
-	if (GetLocalRole() == ROLE_AutonomousProxy)
-	{
-		ServerSyncCurrentWeapon();
-	}
 }
 
 void AGSHeroCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -826,79 +766,6 @@ void AGSHeroCharacter::InitializeFloatingStatusBar()
 	}
 }
 
-// Client only
-void AGSHeroCharacter::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-
-	AGSPlayerState* PS = GetPlayerState<AGSPlayerState>();
-	if (PS)
-	{
-		// Set the ASC for clients. Server does this in PossessedBy.
-		AbilitySystemComponent = Cast<UGSAbilitySystemComponent>(PS->GetAbilitySystemComponent());
-
-		// Init ASC Actor Info for clients. Server will init its ASC when it possesses a new Actor.
-		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
-
-		// Bind player input to the AbilitySystemComponent. Also called in SetupPlayerInputComponent because of a potential race condition.
-		BindASCInput();
-
-		AbilitySystemComponent->AbilityFailedCallbacks.AddUObject(this, &AGSHeroCharacter::OnAbilityActivationFailed);
-
-		// Set the AttributeSetBase for convenience attribute functions
-		AttributeSetBase = PS->GetAttributeSetBase();
-		
-		AmmoAttributeSet = PS->GetAmmoAttributeSet();
-
-		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that posession from rejoining doesn't reset attributes.
-		// For now assume possession = spawn/respawn.
-		InitializeAttributes();
-
-		AGSPlayerController* PC = Cast<AGSPlayerController>(GetController());
-		if (PC)
-		{
-			PC->CreateHUD();
-		}
-		
-		if (CurrentWeapon)
-		{
-			// If current weapon repped before PlayerState, set tag on ASC
-			AbilitySystemComponent->AddLooseGameplayTag(CurrentWeaponTag);
-			// Update owning character and ASC just in case it repped before PlayerState
-			CurrentWeapon->SetOwningCharacter(this);
-
-			if (!PrimaryReserveAmmoChangedDelegateHandle.IsValid())
-			{
-				PrimaryReserveAmmoChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UGSAmmoAttributeSet::GetReserveAmmoAttributeFromTag(CurrentWeapon->PrimaryAmmoType)).AddUObject(this, &AGSHeroCharacter::CurrentWeaponPrimaryReserveAmmoChanged);
-			}
-			if (!SecondaryReserveAmmoChangedDelegateHandle.IsValid())
-			{
-				SecondaryReserveAmmoChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UGSAmmoAttributeSet::GetReserveAmmoAttributeFromTag(CurrentWeapon->SecondaryAmmoType)).AddUObject(this, &AGSHeroCharacter::CurrentWeaponSecondaryReserveAmmoChanged);
-			}
-		}
-
-		if (AbilitySystemComponent->GetTagCount(DeadTag) > 0)
-		{
-			// Set Health/Mana/Stamina/Shield to their max. This is only for *Respawn*. It will be set (replicated) by the
-			// Server, but we call it here just to be a little more responsive.
-			SetHealth(GetMaxHealth());
-			SetMana(GetMaxMana());
-			SetStamina(GetMaxStamina());
-			SetShield(GetMaxShield());
-		}
-
-		// Simulated on proxies don't have their PlayerStates yet when BeginPlay is called so we call it again here
-		InitializeFloatingStatusBar();
-	}
-}
-
-void AGSHeroCharacter::OnRep_Controller()
-{
-	Super::OnRep_Controller();
-
-	SetupStartupPerspective();
-}
-
 void AGSHeroCharacter::BindASCInput()
 {
 	if (!bASCInputBound && IsValid(AbilitySystemComponent) && IsValid(InputComponent))
@@ -913,11 +780,6 @@ void AGSHeroCharacter::BindASCInput()
 
 void AGSHeroCharacter::SpawnDefaultInventory()
 {
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		return;
-	}
-
 	int32 NumWeaponClasses = DefaultInventoryWeaponClasses.Num();
 	for (int32 i = 0; i < NumWeaponClasses; i++)
 	{
@@ -1068,7 +930,7 @@ void AGSHeroCharacter::UnEquipCurrentWeapon()
 	CurrentWeapon = nullptr;
 
 	AGSPlayerController* PC = GetController<AGSPlayerController>();
-	if (PC && PC->IsLocalController())
+	if (PC)
 	{
 		PC->SetEquippedWeaponPrimaryIconFromSprite(nullptr);
 		PC->SetEquippedWeaponStatusText(FText());
@@ -1081,7 +943,7 @@ void AGSHeroCharacter::UnEquipCurrentWeapon()
 void AGSHeroCharacter::CurrentWeaponPrimaryClipAmmoChanged(int32 OldPrimaryClipAmmo, int32 NewPrimaryClipAmmo)
 {
 	AGSPlayerController* PC = GetController<AGSPlayerController>();
-	if (PC && PC->IsLocalController())
+	if (PC)
 	{
 		PC->SetPrimaryClipAmmo(NewPrimaryClipAmmo);
 	}
@@ -1090,7 +952,7 @@ void AGSHeroCharacter::CurrentWeaponPrimaryClipAmmoChanged(int32 OldPrimaryClipA
 void AGSHeroCharacter::CurrentWeaponSecondaryClipAmmoChanged(int32 OldSecondaryClipAmmo, int32 NewSecondaryClipAmmo)
 {
 	AGSPlayerController* PC = GetController<AGSPlayerController>();
-	if (PC && PC->IsLocalController())
+	if (PC)
 	{
 		PC->SetSecondaryClipAmmo(NewSecondaryClipAmmo);
 	}
@@ -1099,7 +961,7 @@ void AGSHeroCharacter::CurrentWeaponSecondaryClipAmmoChanged(int32 OldSecondaryC
 void AGSHeroCharacter::CurrentWeaponPrimaryReserveAmmoChanged(const FOnAttributeChangeData& Data)
 {
 	AGSPlayerController* PC = GetController<AGSPlayerController>();
-	if (PC && PC->IsLocalController())
+	if (PC)
 	{
 		PC->SetPrimaryReserveAmmo(Data.NewValue);
 	}
@@ -1108,76 +970,8 @@ void AGSHeroCharacter::CurrentWeaponPrimaryReserveAmmoChanged(const FOnAttribute
 void AGSHeroCharacter::CurrentWeaponSecondaryReserveAmmoChanged(const FOnAttributeChangeData& Data)
 {
 	AGSPlayerController* PC = GetController<AGSPlayerController>();
-	if (PC && PC->IsLocalController())
+	if (PC)
 	{
 		PC->SetSecondaryReserveAmmo(Data.NewValue);
 	}
-}
-
-void AGSHeroCharacter::WeaponChangingDelayReplicationTagChanged(const FGameplayTag CallbackTag, int32 NewCount)
-{
-	if (CallbackTag == WeaponChangingDelayReplicationTag)
-	{
-		if (NewCount < 1)
-		{
-			// We only replicate the current weapon to simulated proxies so manually sync it when the weapon changing delay replication
-			// tag is removed. We keep the weapon changing tag on for ~1s after the equip montage to allow for activating changing weapon
-			// again without the server trying to clobber the next locally predicted weapon.
-			ClientSyncCurrentWeapon(CurrentWeapon);
-		}
-	}
-}
-
-void AGSHeroCharacter::OnRep_CurrentWeapon(AGSWeapon* LastWeapon)
-{
-	bChangedWeaponLocally = false;
-	SetCurrentWeapon(CurrentWeapon, LastWeapon);
-}
-
-void AGSHeroCharacter::OnRep_Inventory()
-{
-	if (GetLocalRole() == ROLE_AutonomousProxy && Inventory.Weapons.Num() > 0 && !CurrentWeapon)
-	{
-		// Since we don't replicate the CurrentWeapon to the owning client, this is a way to ask the Server to sync
-		// the CurrentWeapon after it's been spawned via replication from the Server.
-		// The weapon spawning is replicated but the variable CurrentWeapon is not on the owning client.
-		ServerSyncCurrentWeapon();
-	}
-}
-
-void AGSHeroCharacter::OnAbilityActivationFailed(const UGameplayAbility* FailedAbility, const FGameplayTagContainer& FailTags)
-{
-	if (FailedAbility && FailedAbility->GetAssetTags().HasTagExact(FGameplayTag::RequestGameplayTag(FName("Ability.Weapon.IsChanging"))))
-	{
-		if (bChangedWeaponLocally)
-		{
-			// Ask the Server to resync the CurrentWeapon that we predictively changed
-			UE_LOG(LogTemp, Warning, TEXT("%s Weapon Changing ability activation failed. Syncing CurrentWeapon. %s. %s"), *FString(__FUNCTION__),
-				*UGSBlueprintFunctionLibrary::GetPlayerEditorWindowRole(GetWorld()), *FailTags.ToString());
-
-			ServerSyncCurrentWeapon();
-		}
-	}
-}
-
-void AGSHeroCharacter::ServerSyncCurrentWeapon_Implementation()
-{
-	ClientSyncCurrentWeapon(CurrentWeapon);
-}
-
-bool AGSHeroCharacter::ServerSyncCurrentWeapon_Validate()
-{
-	return true;
-}
-
-void AGSHeroCharacter::ClientSyncCurrentWeapon_Implementation(AGSWeapon* InWeapon)
-{
-	AGSWeapon* LastWeapon = CurrentWeapon;
-	CurrentWeapon = InWeapon;
-	OnRep_CurrentWeapon(LastWeapon);
-}
-
-bool AGSHeroCharacter::ClientSyncCurrentWeapon_Validate(AGSWeapon* InWeapon)
-{
-	return true;
 }

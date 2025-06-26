@@ -57,8 +57,6 @@ public:
 
 	FGameplayTag CurrentWeaponTag;
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -218,11 +216,6 @@ protected:
 
 	bool bASCInputBound;
 
-	// Set to true when we change the weapon predictively and flip it to false when the Server replicates to confirm.
-	// We use this if the Server refused a weapon change ability's activation to ask the Server to sync the client back up
-	// with the correct CurrentWeapon.
-	bool bChangedWeaponLocally;
-
 	UPROPERTY(BlueprintReadOnly, Category = "GASShooter|Camera")
 	float Default1PFOV;
 
@@ -253,13 +246,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "GASShooter|UI")
 	class UWidgetComponent* UIFloatingStatusBarComponent;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Inventory)
+	UPROPERTY()
 	FGSHeroInventory Inventory;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GASShooter|Inventory")
 	TArray<TSubclassOf<AGSWeapon>> DefaultInventoryWeaponClasses;
 
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentWeapon)
+	UPROPERTY()
 	AGSWeapon* CurrentWeapon;
 
 	UPROPERTY()
@@ -278,7 +271,6 @@ protected:
 
 	// Cache tags
 	FGameplayTag NoWeaponTag;
-	FGameplayTag WeaponChangingDelayReplicationTag;
 	FGameplayTag WeaponAmmoTypeNoneTag;
 	FGameplayTag WeaponAbilityTag;
 	FGameplayTag KnockedDownTag;
@@ -287,9 +279,6 @@ protected:
 	// Attribute changed delegate handles
 	FDelegateHandle PrimaryReserveAmmoChangedDelegateHandle;
 	FDelegateHandle SecondaryReserveAmmoChangedDelegateHandle;
-
-	// Tag changed delegate handles
-	FDelegateHandle WeaponChangingDelayReplicationTagChangedDelegateHandle;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -327,10 +316,6 @@ protected:
 	UFUNCTION()
 	void InitializeFloatingStatusBar();
 
-	// Client only
-	virtual void OnRep_PlayerState() override;
-	virtual void OnRep_Controller() override;
-
 	// Called from both SetupPlayerInputComponent and OnRep_PlayerState because of a potential race condition where the PlayerController might
 	// call ClientRestart which calls SetupPlayerInputComponent before the PlayerState is repped to the client so the PlayerState would be null in SetupPlayerInputComponent.
 	// Conversely, the PlayerState might be repped before the PlayerController calls ClientRestart so the Actor's InputComponent would be null in OnRep_PlayerState.
@@ -361,31 +346,5 @@ protected:
 	virtual void CurrentWeaponPrimaryReserveAmmoChanged(const FOnAttributeChangeData& Data);
 	virtual void CurrentWeaponSecondaryReserveAmmoChanged(const FOnAttributeChangeData& Data);
 
-	// Tag changed callbacks
-	virtual void WeaponChangingDelayReplicationTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
-
-	UFUNCTION()
-	void OnRep_CurrentWeapon(AGSWeapon* LastWeapon);
-
-	UFUNCTION()
-	void OnRep_Inventory();
-
 	void OnAbilityActivationFailed(const UGameplayAbility* FailedAbility, const FGameplayTagContainer& FailTags);
-	
-	// The CurrentWeapon is only automatically replicated to simulated clients.
-	// The autonomous client can use this to request the proper CurrentWeapon from the server when it knows it may be
-	// out of sync with it from predictive client-side changes.
-	UFUNCTION(Server, Reliable)
-	void ServerSyncCurrentWeapon();
-	void ServerSyncCurrentWeapon_Implementation();
-	bool ServerSyncCurrentWeapon_Validate();
-	
-	// The CurrentWeapon is only automatically replicated to simulated clients.
-	// Use this function to manually sync the autonomous client's CurrentWeapon when we're ready to.
-	// This allows us to predict weapon changes (changing weapons fast multiple times in a row so that the server doesn't
-	// replicate and clobber our CurrentWeapon).
-	UFUNCTION(Client, Reliable)
-	void ClientSyncCurrentWeapon(AGSWeapon* InWeapon);
-	void ClientSyncCurrentWeapon_Implementation(AGSWeapon* InWeapon);
-	bool ClientSyncCurrentWeapon_Validate(AGSWeapon* InWeapon);
 };

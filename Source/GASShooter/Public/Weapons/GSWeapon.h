@@ -112,10 +112,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GASShooter|GSWeapon")
 	virtual void ResetWeapon();
 
-	UFUNCTION(NetMulticast, Reliable)
 	void OnDropped(FVector NewLocation);
-	virtual void OnDropped_Implementation(FVector NewLocation);
-	virtual bool OnDropped_Validate(FVector NewLocation);
 
 	UFUNCTION(BlueprintCallable, Category = "GASShooter|GSWeapon")
 	virtual int32 GetPrimaryClipAmmo() const;
@@ -220,7 +217,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GASShooter|GSWeapon")
 	FVector WeaponMesh3PEquippedRelativeLocation;
 
-	UPROPERTY(BlueprintReadOnly, Replicated, Category = "GASShooter|GSWeapon")
+	UPROPERTY(BlueprintReadOnly, Category = "GASShooter|GSWeapon")
 	AGSHeroCharacter* OwningCharacter;
 
 	UPROPERTY(EditAnywhere, Category = "GASShooter|GSWeapon")

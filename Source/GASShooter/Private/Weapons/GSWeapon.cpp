@@ -187,16 +187,9 @@ void AGSWeapon::AddAbilities()
 	}
 
 	UGSAbilitySystemComponent* ASC = Cast<UGSAbilitySystemComponent>(OwningCharacter->GetAbilitySystemComponent());
-
 	if (!ASC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("%s %s Role: %s ASC is null"), *FString(__FUNCTION__), *GetName(), GET_ACTOR_ROLE_FSTRING(OwningCharacter));
-		return;
-	}
-
-	// Grant abilities, but only on the server	
-	if (GetLocalRole() != ROLE_Authority)
-	{
 		return;
 	}
 
@@ -215,14 +208,7 @@ void AGSWeapon::RemoveAbilities()
 	}
 
 	UGSAbilitySystemComponent* ASC = Cast<UGSAbilitySystemComponent>(OwningCharacter->GetAbilitySystemComponent());
-
 	if (!ASC)
-	{
-		return;
-	}
-
-	// Remove abilities, but only on the server	
-	if (GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -245,7 +231,7 @@ void AGSWeapon::ResetWeapon()
 	StatusText = DefaultStatusText;
 }
 
-void AGSWeapon::OnDropped_Implementation(FVector NewLocation)
+void AGSWeapon::OnDropped(FVector NewLocation)
 {
 	SetOwningCharacter(nullptr);
 	ResetWeapon();
@@ -266,11 +252,6 @@ void AGSWeapon::OnDropped_Implementation(FVector NewLocation)
 		WeaponMesh3P->CastShadow = true;
 		WeaponMesh3P->SetVisibility(true, true);
 	}
-}
-
-bool AGSWeapon::OnDropped_Validate(FVector NewLocation)
-{
-	return true;
 }
 
 int32 AGSWeapon::GetPrimaryClipAmmo() const

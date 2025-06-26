@@ -9,7 +9,7 @@
 class USkeletalMeshComponent;
 
 /**
-* Data about montages that were played locally (all montages in case of server. predictive montages in case of client). Never replicated directly.
+* Data about montages that were played locally.
 */
 USTRUCT()
 struct GASSHOOTER_API FGameplayAbilityLocalAnimMontageForMesh
@@ -39,31 +39,6 @@ public:
 };
 
 /**
-* Data about montages that is replicated to simulated clients.
-*/
-USTRUCT()
-struct GASSHOOTER_API FGameplayAbilityRepAnimMontageForMesh
-{
-	GENERATED_BODY();
-
-public:
-	UPROPERTY()
-	USkeletalMeshComponent* Mesh;
-
-	UPROPERTY()
-	FGameplayAbilityRepAnimMontage RepMontageInfo;
-
-	FGameplayAbilityRepAnimMontageForMesh() : Mesh(nullptr), RepMontageInfo()
-	{
-	}
-
-	FGameplayAbilityRepAnimMontageForMesh(USkeletalMeshComponent* InMesh)
-		: Mesh(InMesh), RepMontageInfo()
-	{
-	}
-};
-
-/**
  * 
  */
 UCLASS()
@@ -77,11 +52,9 @@ public:
 	bool bCharacterAbilitiesGiven = false;
 	bool bStartupEffectsApplied = false;
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 	virtual bool GetShouldTick() const override;
 
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
 
@@ -103,19 +76,19 @@ public:
 	// Turn on RPC batching in ASC. Off by default.
 	virtual bool ShouldDoServerAbilityRPCBatch() const override { return true; }
 
-	// Exposes AddLooseGameplayTag to Blueprint. This tag is *not* replicated.
+	// Exposes AddLooseGameplayTag to Blueprint.
 	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "AddLooseGameplayTag"))
 	void K2_AddLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count = 1);
 
-	// Exposes AddLooseGameplayTags to Blueprint. These tags are *not* replicated.
+	// Exposes AddLooseGameplayTags to Blueprint.
 	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "AddLooseGameplayTags"))
 	void K2_AddLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count = 1);
 
-	// Exposes RemoveLooseGameplayTag to Blueprint. This tag is *not* replicated.
+	// Exposes RemoveLooseGameplayTag to Blueprint..
 	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "RemoveLooseGameplayTag"))
 	void K2_RemoveLooseGameplayTag(const FGameplayTag& GameplayTag, int32 Count = 1);
 
-	// Exposes RemoveLooseGameplayTags to Blueprint. These tags are *not* replicated.
+	// Exposes RemoveLooseGameplayTags to Blueprint.
 	UFUNCTION(BlueprintCallable, Category = "Abilities", Meta = (DisplayName = "RemoveLooseGameplayTags"))
 	void K2_RemoveLooseGameplayTags(const FGameplayTagContainer& GameplayTags, int32 Count = 1);
 
@@ -219,56 +192,11 @@ protected:
 	//  Only one ability can be animating at a time though?
 	// ----------------------------------------------------------------------------------------------------------------	
 
-	// Set if montage rep happens while we don't have the animinstance associated with us yet
-	UPROPERTY()
-	bool bPendingMontageRepForMesh;
-
-	// Data structure for montages that were instigated locally (everything if server, predictive if client. replicated if simulated proxy)
+	// Data structure for montages that were instigated locally
 	// Will be max one element per skeletal mesh on the AvatarActor
 	UPROPERTY()
 	TArray<FGameplayAbilityLocalAnimMontageForMesh> LocalAnimMontageInfoForMeshes;
 
-	// Data structure for replicating montage info to simulated clients
-	// Will be max one element per skeletal mesh on the AvatarActor
-	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedAnimMontageForMesh)
-	TArray<FGameplayAbilityRepAnimMontageForMesh> RepAnimMontageInfoForMeshes;
-
 	// Finds the existing FGameplayAbilityLocalAnimMontageForMesh for the mesh or creates one if it doesn't exist
 	FGameplayAbilityLocalAnimMontageForMesh& GetLocalAnimMontageInfoForMesh(USkeletalMeshComponent* InMesh);
-	// Finds the existing FGameplayAbilityRepAnimMontageForMesh for the mesh or creates one if it doesn't exist
-	FGameplayAbilityRepAnimMontageForMesh& GetGameplayAbilityRepAnimMontageForMesh(USkeletalMeshComponent* InMesh);
-
-	// Called when a prediction key that played a montage is rejected
-	void OnPredictiveMontageRejectedForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* PredictiveMontage);
-
-	// Copy LocalAnimMontageInfo into RepAnimMontageInfo
-	void AnimMontage_UpdateReplicatedDataForMesh(USkeletalMeshComponent* InMesh);
-	void AnimMontage_UpdateReplicatedDataForMesh(FGameplayAbilityRepAnimMontageForMesh& OutRepAnimMontageInfo);
-
-	// Copy over playing flags for duplicate animation data
-	void AnimMontage_UpdateForcedPlayFlagsForMesh(FGameplayAbilityRepAnimMontageForMesh& OutRepAnimMontageInfo);	
-
-	UFUNCTION()
-	virtual void OnRep_ReplicatedAnimMontageForMesh();
-
-	// Returns true if we are ready to handle replicated montage information
-	virtual bool IsReadyForReplicatedMontageForMesh();
-
-	// RPC function called from CurrentMontageSetNextSectionName, replicates to other clients
-	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerCurrentMontageSetNextSectionNameForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float ClientPosition, FName SectionName, FName NextSectionName);
-	void ServerCurrentMontageSetNextSectionNameForMesh_Implementation(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float ClientPosition, FName SectionName, FName NextSectionName);
-	bool ServerCurrentMontageSetNextSectionNameForMesh_Validate(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float ClientPosition, FName SectionName, FName NextSectionName);
-
-	// RPC function called from CurrentMontageJumpToSection, replicates to other clients
-	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerCurrentMontageJumpToSectionNameForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, FName SectionName);
-	void ServerCurrentMontageJumpToSectionNameForMesh_Implementation(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, FName SectionName);
-	bool ServerCurrentMontageJumpToSectionNameForMesh_Validate(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, FName SectionName);
-
-	// RPC function called from CurrentMontageSetPlayRate, replicates to other clients
-	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerCurrentMontageSetPlayRateForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float InPlayRate);
-	void ServerCurrentMontageSetPlayRateForMesh_Implementation(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float InPlayRate);
-	bool ServerCurrentMontageSetPlayRateForMesh_Validate(USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float InPlayRate);
 };
