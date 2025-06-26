@@ -146,7 +146,7 @@ void AGSPlayerController::SetHUDReticle(TSubclassOf<UGSHUDReticle> ReticleClass)
 	}
 }
 
-void AGSPlayerController::ShowDamageNumber_Implementation(float DamageAmount, AGSCharacterBase* TargetCharacter, FGameplayTagContainer DamageNumberTags)
+void AGSPlayerController::ShowDamageNumber(float DamageAmount, AGSCharacterBase* TargetCharacter, FGameplayTagContainer DamageNumberTags)
 {
 	if (IsValid(TargetCharacter))
 	{
@@ -154,32 +154,12 @@ void AGSPlayerController::ShowDamageNumber_Implementation(float DamageAmount, AG
 	}
 }
 
-bool AGSPlayerController::ShowDamageNumber_Validate(float DamageAmount, AGSCharacterBase* TargetCharacter, FGameplayTagContainer DamageNumberTags)
-{
-	return true;
-}
-
-void AGSPlayerController::SetRespawnCountdown_Implementation(float RespawnTimeRemaining)
+void AGSPlayerController::SetRespawnCountdown(float RespawnTimeRemaining)
 {
 	if (UIHUDWidget)
 	{
 		UIHUDWidget->SetRespawnCountdown(RespawnTimeRemaining);
 	}
-}
-
-bool AGSPlayerController::SetRespawnCountdown_Validate(float RespawnTimeRemaining)
-{
-	return true;
-}
-
-void AGSPlayerController::ClientSetControlRotation_Implementation(FRotator NewRotation)
-{
-	SetControlRotation(NewRotation);
-}
-
-bool AGSPlayerController::ClientSetControlRotation_Validate(FRotator NewRotation)
-{
-	return true;
 }
 
 void AGSPlayerController::OnPossess(APawn* InPawn)
@@ -192,14 +172,6 @@ void AGSPlayerController::OnPossess(APawn* InPawn)
 		// Init ASC with PS (Owner) and our new Pawn (AvatarActor)
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, InPawn);
 	}
-}
-
-void AGSPlayerController::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-
-	// For edge cases where the PlayerState is repped before the Hero is possessed.
-	CreateHUD();
 }
 
 void AGSPlayerController::Kill()

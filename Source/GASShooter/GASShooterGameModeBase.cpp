@@ -90,7 +90,7 @@ void AGASShooterGameModeBase::RespawnHero(AController* Controller)
 		AGSPlayerController* PC = Cast<AGSPlayerController>(Controller);
 		if (PC)
 		{
-			PC->ClientSetControlRotation(PlayerStart->GetActorRotation());
+			PC->SetControlRotation(PlayerStart->GetActorRotation());
 		}
 	}
 	else
