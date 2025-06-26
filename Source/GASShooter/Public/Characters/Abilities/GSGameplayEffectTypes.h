@@ -52,8 +52,6 @@ public:
 		return NewContext;
 	}
 
-	virtual bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess) override;
-
 protected:
 	FGameplayAbilityTargetDataHandle TargetData;
 };
@@ -63,7 +61,7 @@ struct TStructOpsTypeTraits<FGSGameplayEffectContext> : public TStructOpsTypeTra
 {
 	enum
 	{
-		WithNetSerializer = true,
+		WithNetSerializer = false,
 		WithCopy = true		// Necessary so that TSharedPtr<FHitResult> Data is copied around
 	};
 };

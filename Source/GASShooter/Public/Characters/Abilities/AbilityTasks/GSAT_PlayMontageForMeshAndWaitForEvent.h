@@ -114,9 +114,6 @@ private:
 	bool bStopWhenAbilityEnds;
 
 	UPROPERTY()
-	bool bReplicateMontage;
-
-	UPROPERTY()
 	float OverrideBlendOutTimeForCancelAbility;
 
 	UPROPERTY()
@@ -137,5 +134,4 @@ private:
 	FOnMontageEnded MontageEndedDelegate;
 	FDelegateHandle CancelledHandle;
 	FDelegateHandle EventHandle;
-	
 };

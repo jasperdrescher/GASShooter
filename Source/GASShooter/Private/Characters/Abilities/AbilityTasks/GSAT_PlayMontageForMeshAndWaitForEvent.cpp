@@ -34,8 +34,7 @@ void UGSAT_PlayMontageForMeshAndWaitForEvent::OnMontageBlendingOut(UAnimMontage*
 
 			// Reset AnimRootMotionTranslationScale
 			ACharacter* Character = Cast<ACharacter>(GetAvatarActor());
-			if (Character && (Character->GetLocalRole() == ROLE_Authority ||
-				(Character->GetLocalRole() == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
+			if (Character)
 			{
 				Character->SetAnimRootMotionTranslationScale(1.f);
 			}
@@ -112,7 +111,6 @@ UGSAT_PlayMontageForMeshAndWaitForEvent* UGSAT_PlayMontageForMeshAndWaitForEvent
 	MyObj->StartSection = StartSection;
 	MyObj->AnimRootMotionTranslationScale = AnimRootMotionTranslationScale;
 	MyObj->bStopWhenAbilityEnds = bStopWhenAbilityEnds;
-	MyObj->bReplicateMontage = bReplicateMontage;
 	MyObj->OverrideBlendOutTimeForCancelAbility = OverrideBlendOutTimeForCancelAbility;
 	MyObj->OverrideBlendOutTimeForStopWhenEndAbility = OverrideBlendOutTimeForStopWhenEndAbility;
 
@@ -144,7 +142,7 @@ void UGSAT_PlayMontageForMeshAndWaitForEvent::Activate()
 			// Bind to event callback
 			EventHandle = GSAbilitySystemComponent->AddGameplayEventTagContainerDelegate(EventTags, FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &UGSAT_PlayMontageForMeshAndWaitForEvent::OnGameplayEvent));
 
-			if (GSAbilitySystemComponent->PlayMontageForMesh(Ability, Mesh, Ability->GetCurrentActivationInfo(), MontageToPlay, Rate, StartSection, bReplicateMontage) > 0.f)
+			if (GSAbilitySystemComponent->PlayMontageForMesh(Ability, Mesh, Ability->GetCurrentActivationInfo(), MontageToPlay, Rate, StartSection) > 0.f)
 			{
 				// Playing a montage could potentially fire off a callback into game code which could kill this ability! Early out if we are  pending kill.
 				if (ShouldBroadcastAbilityTaskDelegates() == false)
@@ -161,8 +159,7 @@ void UGSAT_PlayMontageForMeshAndWaitForEvent::Activate()
 				AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, MontageToPlay);
 
 				ACharacter* Character = Cast<ACharacter>(GetAvatarActor());
-				if (Character && (Character->GetLocalRole() == ROLE_Authority ||
-					(Character->GetLocalRole() == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
+				if (Character)
 				{
 					Character->SetAnimRootMotionTranslationScale(AnimRootMotionTranslationScale);
 				}

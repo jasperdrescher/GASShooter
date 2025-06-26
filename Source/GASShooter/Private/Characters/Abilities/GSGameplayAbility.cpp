@@ -147,21 +147,14 @@ void UGSGameplayAbility::ExternalEndAbility()
 {
 	check(CurrentActorInfo);
 
-	bool bReplicateEndAbility = true;
 	bool bWasCancelled = false;
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, bReplicateEndAbility, bWasCancelled);
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, bWasCancelled);
 }
 
 FString UGSGameplayAbility::GetCurrentPredictionKeyStatus()
 {
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	return ASC->ScopedPredictionKey.ToString() + " is valid for more prediction: " + (ASC->ScopedPredictionKey.IsValidForMorePrediction() ? TEXT("true") : TEXT("false"));
-}
-
-bool UGSGameplayAbility::IsPredictionKeyValidForMorePrediction() const
-{
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	return ASC->ScopedPredictionKey.IsValidForMorePrediction();
 }
 
 bool UGSGameplayAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const

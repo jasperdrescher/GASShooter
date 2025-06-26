@@ -246,7 +246,7 @@ FActiveGameplayEffectHandle UGSAbilitySystemComponent::BP_ApplyGameplayEffectToT
 	return ApplyGameplayEffectToTarget(GameplayEffect, Target, Level, Context);
 }
 
-float UGSAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* InAnimatingAbility, USkeletalMeshComponent* InMesh, FGameplayAbilityActivationInfo ActivationInfo, UAnimMontage* NewAnimMontage, float InPlayRate, FName StartSectionName, bool bReplicateMontage)
+float UGSAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* InAnimatingAbility, USkeletalMeshComponent* InMesh, FGameplayAbilityActivationInfo ActivationInfo, UAnimMontage* NewAnimMontage, float InPlayRate, FName StartSectionName)
 {
 	UGSGameplayAbility* InAbility = Cast<UGSGameplayAbility>(InAnimatingAbility);
 

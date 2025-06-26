@@ -113,10 +113,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability")
 	virtual FString GetCurrentPredictionKeyStatus();
 
-	// Returns if the current prediction key is valid for more predicting.
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Ability")
-	virtual bool IsPredictionKeyValidForMorePrediction() const;
-
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 
 	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;

@@ -549,18 +549,6 @@ void AGSHeroCharacter::PostInteract_Implementation(AActor* InteractingActor, UPr
 	}
 }
 
-void AGSHeroCharacter::GetPreInteractSyncType_Implementation(bool& bShouldSync, EAbilityTaskNetSyncType& Type, UPrimitiveComponent* InteractionComponent) const
-{
-	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag))
-	{
-		bShouldSync = true;
-		Type = EAbilityTaskNetSyncType::OnlyClientWait;
-		return;
-	}
-
-	IGSInteractable::GetPreInteractSyncType_Implementation(bShouldSync, Type, InteractionComponent);
-}
-
 void AGSHeroCharacter::CancelInteraction_Implementation(UPrimitiveComponent* InteractionComponent)
 {
 	if (IsValid(AbilitySystemComponent) && AbilitySystemComponent->HasMatchingGameplayTag(KnockedDownTag))

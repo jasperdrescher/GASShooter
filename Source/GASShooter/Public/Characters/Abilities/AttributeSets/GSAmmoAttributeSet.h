@@ -25,33 +25,32 @@ class GASSHOOTER_API UGSAmmoAttributeSet : public UAttributeSet
 public:
 	UGSAmmoAttributeSet();
 
-	UPROPERTY(BlueprintReadOnly, Category = "Ammo", ReplicatedUsing = OnRep_RifleReserveAmmo)
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
 	FGameplayAttributeData RifleReserveAmmo;
 	ATTRIBUTE_ACCESSORS(UGSAmmoAttributeSet, RifleReserveAmmo)
 
-	UPROPERTY(BlueprintReadOnly, Category = "Ammo", ReplicatedUsing = OnRep_MaxRifleReserveAmmo)
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
 	FGameplayAttributeData MaxRifleReserveAmmo;
 	ATTRIBUTE_ACCESSORS(UGSAmmoAttributeSet, MaxRifleReserveAmmo)
 
-	UPROPERTY(BlueprintReadOnly, Category = "Ammo", ReplicatedUsing = OnRep_RocketReserveAmmo)
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
 	FGameplayAttributeData RocketReserveAmmo;
 	ATTRIBUTE_ACCESSORS(UGSAmmoAttributeSet, RocketReserveAmmo)
 
-	UPROPERTY(BlueprintReadOnly, Category = "Ammo", ReplicatedUsing = OnRep_MaxRocketReserveAmmo)
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
 	FGameplayAttributeData MaxRocketReserveAmmo;
 	ATTRIBUTE_ACCESSORS(UGSAmmoAttributeSet, MaxRocketReserveAmmo)
 
-	UPROPERTY(BlueprintReadOnly, Category = "Ammo", ReplicatedUsing = OnRep_ShotgunReserveAmmo)
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
 	FGameplayAttributeData ShotgunReserveAmmo;
 	ATTRIBUTE_ACCESSORS(UGSAmmoAttributeSet, ShotgunReserveAmmo)
 
-	UPROPERTY(BlueprintReadOnly, Category = "Ammo", ReplicatedUsing = OnRep_MaxShotgunReserveAmmo)
+	UPROPERTY(BlueprintReadOnly, Category = "Ammo")
 	FGameplayAttributeData MaxShotgunReserveAmmo;
 	ATTRIBUTE_ACCESSORS(UGSAmmoAttributeSet, MaxShotgunReserveAmmo)
 
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	static FGameplayAttribute GetReserveAmmoAttributeFromTag(FGameplayTag& PrimaryAmmoTag);
 	static FGameplayAttribute GetMaxReserveAmmoAttributeFromTag(FGameplayTag& PrimaryAmmoTag);
@@ -65,26 +64,4 @@ protected:
 	// Helper function to proportionally adjust the value of an attribute when it's associated max attribute changes.
 	// (i.e. When MaxHealth increases, Health increases by an amount that maintains the same percentage as before)
 	void AdjustAttributeForMaxChange(FGameplayAttributeData& AffectedAttribute, const FGameplayAttributeData& MaxAttribute, float NewMaxValue, const FGameplayAttribute& AffectedAttributeProperty);
-
-	/**
-	* These OnRep functions exist to make sure that the ability system internal representations are synchronized properly during replication
-	**/
-	
-	UFUNCTION()
-	virtual void OnRep_RifleReserveAmmo(const FGameplayAttributeData& OldRifleReserveAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_MaxRifleReserveAmmo(const FGameplayAttributeData& OldMaxRifleReserveAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_RocketReserveAmmo(const FGameplayAttributeData& OldRocketReserveAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_MaxRocketReserveAmmo(const FGameplayAttributeData& OldMaxRocketReserveAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_ShotgunReserveAmmo(const FGameplayAttributeData& OldShotgunReserveAmmo);
-
-	UFUNCTION()
-	virtual void OnRep_MaxShotgunReserveAmmo(const FGameplayAttributeData& OldMaxShotgunReserveAmmo);
 };

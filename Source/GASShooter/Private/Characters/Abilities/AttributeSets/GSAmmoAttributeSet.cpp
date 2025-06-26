@@ -4,7 +4,6 @@
 #include "Characters/Abilities/AttributeSets/GSAmmoAttributeSet.h"
 #include "GameplayEffect.h"
 #include "GameplayEffectExtension.h"
-#include "Net/UnrealNetwork.h"
 
 UGSAmmoAttributeSet::UGSAmmoAttributeSet()
 {
@@ -37,18 +36,6 @@ void UGSAmmoAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 		float Ammo = GetShotgunReserveAmmo();
 		SetShotgunReserveAmmo(FMath::Clamp<float>(Ammo, 0, GetMaxShotgunReserveAmmo()));
 	}
-}
-
-void UGSAmmoAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME_CONDITION_NOTIFY(UGSAmmoAttributeSet, RifleReserveAmmo, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UGSAmmoAttributeSet, MaxRifleReserveAmmo, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UGSAmmoAttributeSet, RocketReserveAmmo, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UGSAmmoAttributeSet, MaxRocketReserveAmmo, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UGSAmmoAttributeSet, ShotgunReserveAmmo, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UGSAmmoAttributeSet, MaxShotgunReserveAmmo, COND_None, REPNOTIFY_Always);
 }
 
 FGameplayAttribute UGSAmmoAttributeSet::GetReserveAmmoAttributeFromTag(FGameplayTag& PrimaryAmmoTag)
@@ -99,34 +86,4 @@ void UGSAmmoAttributeSet::AdjustAttributeForMaxChange(FGameplayAttributeData& Af
 
 		AbilityComp->ApplyModToAttributeUnsafe(AffectedAttributeProperty, EGameplayModOp::Additive, NewDelta);
 	}
-}
-
-void UGSAmmoAttributeSet::OnRep_RifleReserveAmmo(const FGameplayAttributeData& OldRifleReserveAmmo)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGSAmmoAttributeSet, RifleReserveAmmo, OldRifleReserveAmmo);
-}
-
-void UGSAmmoAttributeSet::OnRep_MaxRifleReserveAmmo(const FGameplayAttributeData& OldMaxRifleReserveAmmo)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGSAmmoAttributeSet, MaxRifleReserveAmmo, OldMaxRifleReserveAmmo);
-}
-
-void UGSAmmoAttributeSet::OnRep_RocketReserveAmmo(const FGameplayAttributeData& OldRocketReserveAmmo)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGSAmmoAttributeSet, RocketReserveAmmo, OldRocketReserveAmmo);
-}
-
-void UGSAmmoAttributeSet::OnRep_MaxRocketReserveAmmo(const FGameplayAttributeData& OldMaxRocketReserveAmmo)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGSAmmoAttributeSet, MaxRocketReserveAmmo, OldMaxRocketReserveAmmo);
-}
-
-void UGSAmmoAttributeSet::OnRep_ShotgunReserveAmmo(const FGameplayAttributeData& OldShotgunReserveAmmo)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGSAmmoAttributeSet, ShotgunReserveAmmo, OldShotgunReserveAmmo);
-}
-
-void UGSAmmoAttributeSet::OnRep_MaxShotgunReserveAmmo(const FGameplayAttributeData& OldMaxShotgunReserveAmmo)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGSAmmoAttributeSet, MaxShotgunReserveAmmo, OldMaxShotgunReserveAmmo);
 }

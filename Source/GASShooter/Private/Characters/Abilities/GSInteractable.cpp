@@ -15,18 +15,6 @@ float IGSInteractable::GetInteractionDuration_Implementation(UPrimitiveComponent
 	return 0.0f;
 }
 
-void IGSInteractable::GetPreInteractSyncType_Implementation(bool& bShouldSync, EAbilityTaskNetSyncType& Type, UPrimitiveComponent* InteractionComponent) const
-{
-	bShouldSync = false;
-	Type = EAbilityTaskNetSyncType::OnlyServerWait;
-}
-
-void IGSInteractable::GetPostInteractSyncType_Implementation(bool& bShouldSync, EAbilityTaskNetSyncType& Type, UPrimitiveComponent* InteractionComponent) const
-{
-	bShouldSync = false;
-	Type = EAbilityTaskNetSyncType::OnlyServerWait;
-}
-
 FSimpleMulticastDelegate* IGSInteractable::GetTargetCancelInteractionDelegate(UPrimitiveComponent* InteractionComponent)
 {
 	return nullptr;

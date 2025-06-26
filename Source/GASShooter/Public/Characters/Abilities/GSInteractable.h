@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "Abilities/Tasks/AbilityTask_NetworkSyncPoint.h"
 #include "GSInteractable.generated.h"
 
 // This class does not need to be modified.
@@ -40,39 +39,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactable")
 	float GetInteractionDuration(UPrimitiveComponent* InteractionComponent) const;
 	virtual float GetInteractionDuration_Implementation(UPrimitiveComponent* InteractionComponent) const;
-
-	/**
-	* Should we sync and who should sync before calling PreInteract()? Defaults to false and OnlyServerWait.
-	* OnlyServerWait - client predictively calls PreInteract().
-	* OnlyClientWait - client waits for server to call PreInteract(). This is useful if we are activating an ability
-	* on another ASC (player) and want to sync actions or animations with our Interact Duration timer.
-	* BothWait - client and server wait for each other before calling PreInteract().
-	*
-	* Player revive uses OnlyClientWait so that the player reviving is in sync with the server since we can't locally
-	* predict an ability run on another player. The downed player's reviving animation will be in sync with the local
-	* player's Interact Duration Timer.
-	*
-	* @param InteractionComponent UPrimitiveComponent in case an Actor has many separate interactable areas.
-	*/
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactable")
-	void GetPreInteractSyncType(bool& bShouldSync, EAbilityTaskNetSyncType& Type, UPrimitiveComponent* InteractionComponent) const;
-	virtual void GetPreInteractSyncType_Implementation(bool& bShouldSync, EAbilityTaskNetSyncType& Type, UPrimitiveComponent* InteractionComponent) const;
-
-	/**
-	* Should we sync and who should sync before calling PostInteract()? Defaults to false and OnlyServerWait.
-	* OnlyServerWait - client predictively calls PostInteract().
-	* OnlyClientWait - client waits for server to call PostInteract().
-	* BothWait - client and server wait for each other before calling PostInteract().
-	*
-	* Player revive uses OnlyServerWait so that the client isn't stuck waiting for the server after the Interaction Duration
-	* ends. Revive's PostInteract() will only run code on the server so it's fine for the client to be "finished" ahead of
-	* the server.
-	*
-	* @param InteractionComponent UPrimitiveComponent in case an Actor has many separate interactable areas.
-	*/
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactable")
-	void GetPostInteractSyncType(bool& bShouldSync, EAbilityTaskNetSyncType& Type, UPrimitiveComponent* InteractionComponent) const;
-	void GetPostInteractSyncType_Implementation(bool& bShouldSync, EAbilityTaskNetSyncType& Type, UPrimitiveComponent* InteractionComponent) const;
 
 	/**
 	* Interact with this Actor. This will call before starting the Interact Duration timer. This might do things, apply
